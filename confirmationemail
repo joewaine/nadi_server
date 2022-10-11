@@ -1,0 +1,112 @@
+app.post("/confirmationemail", function (req, res) {
+
+
+
+    console.log(req.body);
+  
+  
+  console.log('localEmail');
+  console.log('localEmail');
+  console.log('localEmail');
+  console.log('localEmail');
+    
+    res.send(req.body);
+  
+    let htmlBody = `<div style="background-color: #f05d5b;padding: 20px 0 15px;text-align: center;"><h1 style="color: #fff367 !important;font-size: 1.5rem;text-align: center;">${process.env.LOCAL_ENVIRONMENT}`;
+  
+    if (req.body.fulfillment_info.type === "delivery") {
+      htmlBody = htmlBody + `Your Order Has Been Scheduled!</h1></div>`;
+    } else {
+      htmlBody = htmlBody + `Your Order Has Been Scheduled!</h1></div>`;
+    }
+  
+   
+  
+  
+    htmlBody =
+      htmlBody +
+      `<p style="text-align: center;margin: 0 auto;width: 100%;"><br>Thanks for your order!<br>name: ${
+        req.body.fulfillment_info.customer.first_name.replace('nx ','')
+      }<br>
+          <br><span style="font-size: 20px !important;">confirmation code: <b>${
+            req.body.confirmation_code
+          }</b></span><br/><br/>It will be ready on ${moment(
+        String(req.body.scheduled_time)
+      )
+        .tz("America/Los_Angeles")
+        .format("llll")
+        .replace(
+          ", 2020",
+          ", at"
+        )}</p><br/><ul style="padding-left: 0 !important;margin-left:0 !important;list-style-type:none !important;"">`;
+    for (let i = 0; i < req.body.charges.items.length; i++) {
+      htmlBody =
+        htmlBody +
+        '<li style="padding-left: 0 !important;margin-left:0 !important;text-align: center;width: 100%;list-style-type:none !important;">' +
+        JSON.stringify(req.body.charges.items[i].name) +
+        "&nbsp;<b>$" +
+        JSON.stringify(req.body.charges.items[i].price) / 100 +
+        "</b>&nbsp;x&nbsp;" +
+        JSON.stringify(req.body.charges.items[i].quantity) +
+        "</li>";
+    }
+  
+    let addressToInsert = "";
+  
+    if (req.body.restaurant === "Mamnoon Street") {
+      addressToInsert = "2020 6th Ave, Seattle, WA 98121";
+      phoneNumber =
+        '<br>for questions about your order,<br>please call us at <a href="tel:+12063279121">(206) 327-9121</a>';
+    }
+  
+    if (req.body.restaurant === "Mamnoon") {
+      addressToInsert = "1508 Melrose Ave, Seattle, WA 98122";
+      phoneNumber =
+        '<br>for questions about your order,<br>please call us at <a href="tel:+12069069606">(206) 906-9606</a>';
+    }
+  
+  
+  
+    htmlBody =
+      htmlBody +
+      `</ul><br><p style="text-align: center;margin: 0 auto;width: 100%;">Thank you, Your friends at ${req.body.restaurant}<br><br><i>${addressToInsert}</i><br><a href="https://nadimama.com">nadimama.com</a>${phoneNumber}</p>`;
+  
+      
+  
+  let dyn = `${process.env.LOCAL_ENVIRONMENT}Your Order Has Been Scheduled! We will notify you when your food is being prepared.`;
+  
+  
+  
+  // String(process.env.LOCAL_ENVIRONMENT)
+  
+    htmlBody = htmlBody + feedbackParagraph;
+    var mailOptions = {
+      from: "orders@mamnoonrestaurant.com",
+      to: req.body.fulfillment_info.customer.email,
+      bcc: "jen@mamnoonrestaurant.com, joe@mamnoonrestaurant.com",
+      subject: dyn,
+      html: htmlBody,
+    };
+    sendMailBasic(mailOptions, transporter);
+  
+    const number = phoneUtil.parseAndKeepRawInput(
+      req.body.fulfillment_info.customer.phone,
+      "US"
+    );
+    let smsNumber = phoneUtil.format(number, PNF.E164);
+    if (req.body.sms === true) {
+      client.messages.create({
+        to: smsNumber,
+        from: "+12062087871",
+        body: `Your Order Has Been Scheduled! it will be ready on ${moment(
+          String(req.body.scheduled_time)
+        )
+          .tz("America/Los_Angeles")
+          .format("llll")
+          .replace(", 2020", ", at")}`,
+      });
+    }
+  
+  
+    
+  });
